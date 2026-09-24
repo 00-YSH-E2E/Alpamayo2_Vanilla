@@ -324,6 +324,7 @@ def generate_with_stats(
     top_k: int | None,
     temperature: float,
     max_new_tokens: int,
+    do_sample: bool = True,
 ) -> dict[str, Any]:
     """``text_tasks.generate_text`` for auto_labeling, plus token-level statistics.
 
@@ -354,7 +355,7 @@ def generate_with_stats(
     generation_config = copy.deepcopy(model.vlm.generation_config)
     generation_config.top_p = top_p
     generation_config.temperature = temperature
-    generation_config.do_sample = True
+    generation_config.do_sample = do_sample  # generate_text always samples; greedy is for probes
     generation_config.num_return_sequences = 1
     generation_config.max_new_tokens = max_new_tokens
     generation_config.output_logits = True  # the only difference from generate_text
