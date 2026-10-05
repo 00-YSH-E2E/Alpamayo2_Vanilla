@@ -82,7 +82,8 @@ def pair_seed(seed: int, clip_id: str, t0_us: int) -> int:
 
 def load_samples(manifest: Path, t0_us: int | None = None) -> list[dict[str, Any]]:
     rows = json.loads(manifest.read_text())["samples"]
-    out = [{"clip_id": str(r["clip_id"]), "t0_us": int(r["t0_us"])} for r in rows]
+    out = [{"clip_id": str(r["clip_id"]), "t0_us": int(r["t0_us"]), "chunk": r.get("chunk")}
+           for r in rows]
     return [s for s in out if t0_us is None or s["t0_us"] == t0_us]
 
 
@@ -313,8 +314,14 @@ def run_cache(model, avdi, samples, args, meta):
     if index_path.exists():
         done = {(r["clip_id"], r["t0_us"]) for r in map(json.loads, index_path.read_text().splitlines())}
     todo = [s for s in samples if (s["clip_id"], s["t0_us"]) not in done]
+    # Chunks still downloading are deferred; a later run of the same shard picks them up.
+    ready = [s for s in todo if s["chunk"] is None
+             or (args.data_root / ".done" / f"chunk_{int(s['chunk']):04d}.ok").exists()]
+    deferred = len(todo) - len(ready)
+    todo = ready
     (args.out / f"run.shard{args.shard}of{args.num_shards}.json").write_text(json.dumps(meta, indent=2))
-    print(f"[cache] shard {args.shard}/{args.num_shards}: {len(todo)} todo, {len(done)} done", flush=True)
+    print(f"[cache] shard {args.shard}/{args.num_shards}: {len(todo)} todo, {len(done)} done, "
+          f"{deferred} deferred (chunk not downloaded)", flush=True)
     t_run = time.time()
     with index_path.open("a") as index:
         for i, (sample, loaded) in enumerate(iter_loaded(avdi, todo, model, args.workers), 1):
