@@ -1,3 +1,20 @@
+<!-- 코드 설명 (2026-11-08 추가) -->
+## 이 저장소는
+
+NVIDIA Alpamayo 2 Super(34B = 32B VLM + 2B diffusion expert) 공식 추론 코드의 upstream 사본입니다. `src/` 는 그대로 두고, `examples/` 에 CoC 오토라벨링 평가·probe 와 Alpamayo 1.5 KD 용 4캠 teacher 드라이버만 더했습니다.
+
+| 항목 | 내용 |
+|---|---|
+| 목적 | 손대지 않은 A2 Super(Vanilla)로 CoC 라벨·궤적·KD teacher 출력을 만듦 |
+| 핵심 코드 | `src/alpamayo2_super/` upstream 모델·추론 · `examples/run_val_autolabel.py` auto_labeling 배치 + 토큰 logprob·엔트로피 · `examples/run_val_meta_action.py` meta_action·궤적 val · `examples/probe_future_conditioning.py`, `probe_two_stage.py` CoC 조건 probe · `examples/gen_kd_teacher_4cam.py` 4캠 KD teacher (check/eval/cache) |
+| 실행 | `python -m alpamayo2_super.inference_smoke --model-id "$ALPAMAYO2_SUPER_MODEL_ID" --manifest examples/validation_samples.json --sample-index 0` · `RUN_GPU=1 python examples/run_val_autolabel.py --arm 6cam --manifest <pairs.json> --out-root <dir> --model-path <snapshot>` |
+| 입력 → 출력 | PhysicalAI-AV clip (HF 스트리밍 또는 로컬 PAD) + `nvidia/Alpamayo2-Super` → CoC 텍스트·궤적·minADE JSON, KD teacher `.npz` (CoC, K 궤적, x0, Euler velocity) |
+| 환경 | Python 3.12 · `uv sync --locked --dev` · CUDA 12.x (`flash-attn` 빌드) · 34B 용 대용량 VRAM · gated HF 접근 · `gen_kd_teacher_4cam.py` 는 옆 KD repo 의 `LocalPADInterface` 사용 |
+| 원본 | upstream `NVlabs/alpamayo2` (`5e7975f`, 2026-09-15) 위에 YSH-research 6 커밋 — `examples/` 새 파일 5개만, `src/` 변경 없음 |
+| 상태 | 마지막 코드 변경 2026-10-05 · `main` 만 · 10-05 이후 변경 없음 |
+
+---
+
 <div align="center">
 
 # Alpamayo 2 Super
